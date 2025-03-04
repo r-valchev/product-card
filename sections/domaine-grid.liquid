@@ -1,0 +1,59 @@
+<div class="section__header">
+  <h2 class="text-3xl font-bold">Featured products</h2>
+</div>
+
+<div class="flex flex-wrap">
+  {% for product in section.settings.products %}
+    <div class="p-7">
+      <div class="card__media"></div>
+
+      <div class="flex flex-col gap-2">
+        <div class="card__swatches"></div>
+
+        <div class="text-sm">{{ product.vendor }}</div>
+
+        <h3 class="text-base fw-500">{{ product.title }}</h3>
+
+        <div class="flex gap-2 text-sm">
+          {% if product.compare_at_price > product.price %}
+            <span class="visually-hidden">{{ 'price_original' | t }}</span>
+            <span>{{ product.compare_at_price | money }}</span>
+          {% endif %}
+
+          <span class="visually-hidden">{{ 'price_sale' | t }}</span>
+          <span>{{ product.price | money }}</span>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+{% schema %}
+{
+  "name": "Domaine Grid",
+  "tag": "section",
+  "class": "section",
+  "locales": {
+    "en": {
+      "price_original": "Original price",
+      "price_sale": "Sale price"
+    }
+  },
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Products",
+      "limit": 12
+    }
+  ],
+  "presets": [
+    {
+      "name": "Domaine Grid"
+    }
+  ]
+}
+{% endschema %}
