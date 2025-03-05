@@ -1,40 +1,168 @@
-<div class="section__header">
-  <h2 class="text-3xl font-bold">Featured products</h2>
+{% stylesheet %}
+  .card {
+    color: #111111;
+  }
+
+  .card__media {
+    border-color: #e8e8e8;
+  }
+
+  .card__image::before {
+    content: '';
+    display: block;
+    padding-top: 109.5%;
+  }
+
+  .card__title {
+    color: #0a4874;
+  }
+
+  .card__price-sale {
+    color: #ff0000;
+  }
+
+  .tag {
+    font-family: 'Franklin Gothic ATF', sans-serif;
+    border-color: #ff0000;
+    color: #ff0000;
+  }
+
+  .swatch.selected {
+    outline: 1px solid #0a4874;
+    outline-offset: 1px;
+  }
+{% endstylesheet %}
+
+<div class="mb-10">
+  <h2 class="text-2xl lg:text-4xl font-bold">Products</h2>
 </div>
 
 <div class="flex flex-wrap">
   {% for product in section.settings.products %}
-    <div class="p-7">
-      <div class="card__media"></div>
+    {% liquid
+      assign current_variant = product.selected_or_first_available_variant
+      assign color_option = product.options_with_values[0]
+    %}
 
-      <div class="flex flex-col gap-2">
-        <div class="card__swatches"></div>
+    <div class="card relative p-7 js-card">
+      <a href="{{ product.url }}" class="js-card-link">
+        <div class="card__media relative border p-5 rounded-lg overflow-hidden">
+          <div class="tag absolute top-5 left-5 z-10 py-1.5 px-3 border rounded-3xl text-base font-medium">
+            {{ 'tag_sale' | t }}
+          </div>
 
-        <div class="text-sm">{{ product.vendor }}</div>
+          <div class="card__image relative w-72">
+            {% if current_variant.featured_image %}
+              {{
+                current_variant.featured_image
+                | image_url: width: 300
+                | image_tag:
+                  width: 300,
+                  srcset: null,
+                  class: 'absolute top-0 left-0 w-full h-full object-cover js-card-image'
+              }}
+            {% endif %}
 
-        <h3 class="text-base fw-500">{{ product.title }}</h3>
-
-        <div class="flex gap-2 text-sm">
-          {% if product.compare_at_price > product.price %}
-            <span class="visually-hidden">{{ 'price_original' | t }}</span>
-            <span>{{ product.compare_at_price | money }}</span>
-          {% endif %}
-
-          <span class="visually-hidden">{{ 'price_sale' | t }}</span>
-          <span>{{ product.price | money }}</span>
+            {% if current_variant.metafields.card.image_hover %}
+              {{
+                current_variant.metafields.card.image_hover
+                | image_url: width: 300
+                | image_tag:
+                  width: 300,
+                  srcset: null,
+                  class: 'absolute top-0 left-0 w-full h-full object-cover opacity-0 hover:opacity-100 transition-opacity js-card-image-hover'
+              }}
+            {% endif %}
+          </div>
         </div>
-      </div>
+
+        <div class="flex my-4 flex-wrap gap-2">
+          {% for value in color_option.values %}
+            {% liquid
+              if value.swatch.image
+                assign image_url = value.swatch.image | image_url: width: 50
+                assign swatch_value = 'url(' | append: image_url | append: ')'
+              elsif value.swatch.color
+                assign swatch_value = 'rgb(' | append: value.swatch.color.rgb | append: ')'
+              else
+                assign swatch_value = null
+              endif
+            %}
+
+            <span
+              class="swatch w-5 h-5 rounded-full js-swatch-color {% if value.selected %}selected{% endif %}"
+              data-url="{{ value.variant.url }}"
+              data-image="{{ value.variant.image.src | image_url: width: 300, height: 300 }}"
+              data-image-hover="{{ value.variant.metafields.card.image_hover | image_url: width: 300, height: 300 }}"
+              style="background: {{ swatch_value }};"
+            ></span>
+          {% endfor %}
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="text-sm">{{ product.vendor }}</div>
+
+          <h3 class="card__title text-base font-medium">{{ product.title }}</h3>
+
+          <div class="flex gap-2 text-sm">
+            {% if product.compare_at_price > product.price %}
+              <span class="visually-hidden">{{ 'price_original' | t }}</span>
+              <span class="line-through">{{ product.compare_at_price | money }}</span>
+            {% endif %}
+
+            <span class="visually-hidden">{{ 'price_sale' | t }}</span>
+            <span class="card__price-sale">{{ product.price | money }}</span>
+          </div>
+        </div>
+      </a>
     </div>
   {% endfor %}
 </div>
+
+{% javascript %}
+  const cards = document.querySelectorAll('.js-card');
+
+  cards.forEach((card) => {
+    const swatches = card.querySelectorAll('.js-swatch-color');
+    const imageMain = card.querySelector('.js-card-image');
+    const imageHover = card.querySelector('.js-card-image-hover');
+    const link = card.querySelector('.js-card-link');
+
+    const onSwatchHover = (event) => {
+      const current = event.target;
+      const imageURL = current.getAttribute('data-image');
+      const imageHoverURL = current.getAttribute('data-image-hover');
+      const url = current.getAttribute('data-url');
+
+      if (imageMain) {
+        imageMain.setAttribute('src', imageURL);
+      }
+      if (imageHover) {
+        imageHover.setAttribute('src', imageHoverURL);
+      }
+      if (link) {
+        link.setAttribute('href', url);
+      }
+
+      swatches.forEach((swatch) => {
+        swatch.classList.toggle('selected', swatch === current);
+      });
+    };
+
+    swatches.forEach((swatch) => {
+      swatch.addEventListener('mouseover', onSwatchHover);
+    });
+  });
+{% endjavascript %}
 
 {% schema %}
 {
   "name": "Domaine Grid",
   "tag": "section",
-  "class": "section",
+  "class": "section p-12",
   "locales": {
     "en": {
+      "tag_sale": "On Sale!",
       "price_original": "Original price",
       "price_sale": "Sale price"
     }
